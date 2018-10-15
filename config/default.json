@@ -1,0 +1,16 @@
+{
+    "development": {
+        "config_id": "development",
+        "app_name": "Calender Sync",
+        "callback_url" : "http://localhost:8000/auth/google/callback",
+        "client_id" : "XXXXXXXXXXXXXXXXXXXXXXXXX",
+        "client_secret" : "XXXXXXXXXXXXX"
+    },
+    "production": {
+        "config_id": "production",
+        "app_name": "Calender Sync",
+        "callback_url" : "https://aqueous-springs-66871.herokuapp.com/auth/google/callback",
+        "client_id" : "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+        "client_secret" : "XXXXXXXXXXXXXXXXXXXXXXXXXX"
+    }
+}

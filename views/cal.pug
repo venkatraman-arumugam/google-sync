@@ -1,0 +1,173 @@
+extends layout
+
+block styles
+  link(rel='stylesheet' href='/stylesheets/fullcalendar.min.css')
+  link(rel='stylesheet' href='/stylesheets/bootstrap.min.css')
+  link(rel='stylesheet' href='/stylesheets/bootstrap-datetimepicker.min.css')
+  link(rel='stylesheet' href='/stylesheets/fullcalendar.print.min.css' media='print')
+  link(rel='stylesheet' href='/stylesheets/cal.css')
+
+block content
+  #calendar
+  #datepicker
+  .modal.fade(tabindex='-1' role='dialog')
+    .modal-dialog(role='document')
+      .modal-content
+        .modal-header
+          button.close(type='button' data-dismiss='modal' aria-label='Close')
+            span(aria-hidden='true') &times;
+          h4.modal-title Create new event
+        .modal-body
+          .row
+            .col-xs-12
+              label.col-xs-4(for='title') Event title
+              input#title(type='text' name='title')
+          .row
+            .col-xs-12
+              label.col-xs-4(for='starts-at') Starts at
+              input#starts-at(type='text' name='starts_at')
+          .row
+            .col-xs-12
+              label.col-xs-4(for='ends-at') Ends at
+              input#ends-at(type='text' name='ends_at')
+        .modal-footer
+          button.btn.btn-default(type='button' data-dismiss='modal') Close
+          button#save-event.btn.btn-success(type='button') Save changes
+          button#modify-event.btn.btn-warning(type='button') Modify Event
+          button#delete-event.btn.btn-danger(type='button') Delete Event
+
+  
+
+block scripts
+  script(src='/scripts/moment.min.js')
+  script(src='/scripts/moment-with-locales.min.js')
+  script(src='/scripts/jquery.min.js')
+  script(src='/scripts/fullcalendar.min.js')
+  script(src='/scripts/bootstrap.min.js')
+  script(src='/scripts/bootstrap-datetimepicker.min.js')
+  script.
+    var events =  !{JSON.stringify(calendar)}
+    console.log(events)
+      $(document).ready(function () {
+      $('#calendar').fullCalendar({
+      header: {
+      left: 'prev,next today',
+      center: 'title',
+      right: 'month,agendaWeek,agendaDay'
+      },
+      defaultDate: new Date(),
+      navLinks: true,
+      selectable: true,
+      selectHelper: true,
+      select: function (start, end, event) {
+      $('.modal').modal('show');
+      $('.modal').find('#title').val("");
+      $('.modal').find('#starts-at').val(start.format('MM/DD/YYYY h:ss A'));
+      $('.modal').find('#ends-at').val(end.format('MM/DD/YYYY h:ss A'));
+      },
+      editable: true,
+      eventLimit: true,
+      eventClick: function (event, jsEvent, view) {
+      var title = event.title;
+      console.log(event)
+      $('.modal').modal('show');
+      $('.modal').find('#title').val(event.title);
+      $('.modal').find('#starts-at').val(event.start.format('MM/DD/YYYY h:ss A'));
+      if (event.end) {
+      $('.modal').find('#ends-at').val(event.end.format('MM/DD/YYYY h:ss A'));
+      }
+      $('.modal').find("#modify-event").one('click', function (e) {
+      e.preventDefault()
+      var modify_title = $('#title').val();
+      event.title = modify_title;
+      if (event.start) {
+      event.start = (typeof event.start === 'string') ? event.start : event.start.format(
+      'MM/DD/YYYY h:ss A');
+      }
+      if (event.end) {
+      event.end = (typeof event.end === 'string') ? event.end : event.end.format(
+      'MM/DD/YYYY h:ss A');
+      }
+          $('#calendar').fullCalendar('updateEvent', event, true); // stick? = true
+
+      var start = new Date($('#starts-at').val()).toISOString()
+      start = moment(start).format()
+      var end = new Date($('#ends-at').val()).toISOString()
+      end = moment(end).format()
+      var updated_event = {
+        id : event.id,
+        title: event.title,
+        start: start,
+        end: end
+      }
+       $.ajax({
+        'url': '/cal/update',
+        'data': JSON.stringify(updated_event),
+        'type': 'PUT',
+        'contentType': 'application/json',
+        success: function (response) {
+          $('#calendar').fullCalendar('unselect');
+          $('.modal').find('input').val('');
+          $('.modal').modal('hide');
+          console.log(response);
+        },
+        error: function (error) {
+          console.log(error);
+        }
+      });
+      
+      });
+      $('.modal').find('#delete-event').on('click', function () {
+        $.ajax({
+      'url': '/cal/delete',
+      'data': JSON.stringify({"id" : event.id}),
+      'type': 'DELETE',
+      'contentType': 'application/json',
+      success: function (response) {
+        $('#calendar').fullCalendar('removeEvents', event.id);
+        $('.modal').find('input').val('');
+        $('.modal').modal('hide');
+        console.log(response);
+      },
+      error: function (error) {
+        console.log(error);
+      }
+    });
+      });
+      },
+      events: events
+      });
+      $("#starts-at, #ends-at").datetimepicker();
+      $('#save-event').on('click', function () {
+      var title = $('#title').val();
+      if (title) {
+      var start = new Date($('#starts-at').val()).toISOString()
+      start = moment(start).format()
+      var end = new Date($('#ends-at').val()).toISOString()
+      end = moment(end).format()
+      var eventData = {
+      title: title,
+      start: start,
+      end: end
+      };
+      $('#calendar').fullCalendar('renderEvent', eventData, true); // stick? = true
+      }
+
+    $.ajax({
+      'url': '/cal/insert',
+      'data': JSON.stringify(eventData),
+      'type': 'POST',
+      'contentType': 'application/json',
+      success: function (response) {
+        console.log(response);
+      },
+      error: function (error) {
+        console.log(error);
+      }
+    });
+      $('#calendar').fullCalendar('unselect');
+      $('.modal').find('input').val('');
+      $('.modal').modal('hide');
+      });
+      });
+  
